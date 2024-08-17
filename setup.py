@@ -10,13 +10,13 @@ with open('lazy_import/VERSION') as infile:
 
 tests_require = ['pytest', 'pytest-xdist']
 
-setup(name='lazy_import',
+setup(name='lazy_import_plus',
       version=version,
-      description='A module for lazy loading of Python modules',
+      description='A module for lazy loading of Python modules and lazy subclassing of pure Python classes (forked from lazy_import)',
       long_description=readme,
-      url='https://github.com/mnmelo/lazy_import',
-      author='Manuel Nuno Melo',
-      author_email='manuel.nuno.melo@gmail.com',
+      url='https://github.com/gdb/lazy_import',
+      author='Greg Brockman',
+      author_email='gdb@gregbrockman.com',
       license='GPL',
       platforms = ["any"],
       classifiers=['Development Status :: 4 - Beta',
