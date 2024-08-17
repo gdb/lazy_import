@@ -1,23 +1,23 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-# Testing for lazy_import --- https://github.com/mnmelo/lazy_import
+# Testing for lazy_import_plus --- https://github.com/mnmelo/lazy_import_plus
 # Copyright (C) 2017-2018 Manuel Nuno Melo
 #
-# This file is part of lazy_import.
+# This file is part of lazy_import_plus.
 #
-#  lazy_import is free software: you can redistribute it and/or modify
+#  lazy_import_plus is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  lazy_import is distributed in the hope that it will be useful,
+#  lazy_import_plus is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with lazy_import.  If not, see <http://www.gnu.org/licenses/>.
+#  along with lazy_import_plus.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 import pytest
@@ -30,7 +30,7 @@ import string
 import random
 random.seed(42) # For consistency when parallel-testing
 
-import lazy_import
+import lazy_import_plus
 
 # Shortcut to allow direct testing from within python
 
@@ -62,7 +62,7 @@ def random_modname(submodules=0):
         _GENERATED_NAMES.append(modname)
         return modname 
 
-class _TestLazyModule(lazy_import.LazyModule):
+class _TestLazyModule(lazy_import_plus.LazyModule):
     pass
 
 _GENERATED_NAMES = []
@@ -71,7 +71,7 @@ _GENERATED_NAMES = []
 NAMES_EXISTING = ("sched", "distutils.core")
 
 LEVELS = ("leaf", "base")
-CLASSES = (_TestLazyModule, lazy_import.LazyModule)
+CLASSES = (_TestLazyModule, lazy_import_plus.LazyModule)
 CALLABLE_NAMES =("fn1", ("fn1"), ("fn1", "fn2"), ("fn1", "fn2", "fn3"))
 ERROR_MSGS = (None, {"msg":"Module: {module}\n"
                            "Caller: {caller}\n"
@@ -83,8 +83,8 @@ ERROR_MSGS = (None, {"msg":"Module: {module}\n"
                      "module":"error_modname",
                      "caller":"error_callername",
                      "install_name":"error_installname"})
-CALLABLE_ALIASES = (lazy_import.lazy_callable,
-        lazy_import.lazy_function, lazy_import.lazy_class)
+CALLABLE_ALIASES = (lazy_import_plus.lazy_callable,
+        lazy_import_plus.lazy_function, lazy_import_plus.lazy_class)
 
 ###############################################################################
 # Fixtures
@@ -104,11 +104,11 @@ def _check_reuse(modname):
 def _check_lazy_loading(modname):
     names = modname.split(".")
     _check_not_loaded(modname)
-    basename = lazy_import.module_basename(modname)
-    mod = lazy_import.lazy_module(modname, level="leaf")
+    basename = lazy_import_plus.module_basename(modname)
+    mod = lazy_import_plus.lazy_module(modname, level="leaf")
     assert sys.modules[modname] is mod
     assert str(mod) == "Lazily-loaded module " + modname
-    base = lazy_import.lazy_module(modname, level="base")
+    base = lazy_import_plus.lazy_module(modname, level="base")
     assert sys.modules[basename] is base
     assert str(base) == "Lazily-loaded module " + basename
 
@@ -130,7 +130,7 @@ def _check_lazy_loading(modname):
         curr_mod = getattr(curr_mod, submod)
         assert curr_name in sys.modules
         assert str(curr_mod) == "Lazily-loaded module " + curr_name
-        assert isinstance(curr_mod, lazy_import.LazyModule)
+        assert isinstance(curr_mod, lazy_import_plus.LazyModule)
         _check_reuse(curr_name)
         # Check that missing modules raise errors
         if modname in _GENERATED_NAMES:
@@ -166,22 +166,22 @@ def test_lazyload(modname):
 
 def test_presentload():
     import os.path
-    mod = lazy_import.lazy_module("os")
+    mod = lazy_import_plus.lazy_module("os")
     assert mod is os
-    mod = lazy_import.lazy_module("os.path")
+    mod = lazy_import_plus.lazy_module("os.path")
     assert mod is os.path
-    mod = lazy_import.lazy_module("os.path", level="base")
+    mod = lazy_import_plus.lazy_module("os.path", level="base")
     assert mod is os
-    assert not isinstance(mod, lazy_import.LazyModule)
+    assert not isinstance(mod, lazy_import_plus.LazyModule)
 
 @pytest.mark.parametrize("nsub", range(3))
 def test_opts(nsub, lazy_opts):
     modname = random_modname(nsub)
     level, modclass, errors = lazy_opts
-    mod = lazy_import.lazy_module(modname, error_strings=errors,
+    mod = lazy_import_plus.lazy_module(modname, error_strings=errors,
             lazy_mod_class=modclass, level=level)
     names = modname.split(".")
-    basename = lazy_import.module_basename(modname)
+    basename = lazy_import_plus.module_basename(modname)
     if level == "leaf":
         assert sys.modules[modname] is mod
         err_modname = modname
@@ -193,7 +193,7 @@ def test_opts(nsub, lazy_opts):
     # Test the exception err msg
     assert isinstance(mod, modclass)
     if errors is None:
-        expected_err = lazy_import._MSG.format(module=err_modname,
+        expected_err = lazy_import_plus._MSG.format(module=err_modname,
                                                caller=__name__,
                                                install_name=basename)
     else:
@@ -206,7 +206,7 @@ def test_opts(nsub, lazy_opts):
                           CALLABLE_ALIASES))
 def test_callable_missing_module(nsub, errors, cnames, fn):
     modname = random_modname(nsub)
-    basename = lazy_import.module_basename(modname)
+    basename = lazy_import_plus.module_basename(modname)
     if isinstance(cnames, six.string_types):
         lazys = (fn(modname+"."+cnames, error_strings=errors),)
         cnames = (cnames, )
@@ -214,7 +214,7 @@ def test_callable_missing_module(nsub, errors, cnames, fn):
         lazys = fn(modname, *cnames, error_strings=errors)
     for lazy in lazys:
         if errors is None:
-            expected_err = lazy_import._MSG.format(module=modname,
+            expected_err = lazy_import_plus._MSG.format(module=modname,
                                                    caller=__name__,
                                                    install_name=basename)
         else:
@@ -226,7 +226,7 @@ def test_callable_missing_module(nsub, errors, cnames, fn):
                           CALLABLE_ALIASES))
 def test_callable_missing(modname, errors, cnames, fn):
     _check_not_loaded(modname)
-    basename = lazy_import.module_basename(modname)
+    basename = lazy_import_plus.module_basename(modname)
     if isinstance(cnames, six.string_types):
         lazys = (fn(modname+"."+cnames, error_strings=errors),)
         cnames = (cnames, )
@@ -234,7 +234,7 @@ def test_callable_missing(modname, errors, cnames, fn):
         lazys = fn(modname, *cnames, error_strings=errors)
     for lazy, cname in zip(lazys, cnames):
         if errors is None:
-            expected_err = lazy_import._MSG_CALLABLE.format(module=modname,
+            expected_err = lazy_import_plus._MSG_CALLABLE.format(module=modname,
                                                    caller=__name__,
                                                    install_name=basename,
                                                    callable=cname)
@@ -265,7 +265,7 @@ def test_load_lazysub_on_fullmodule(modname, lazy_opts):
     # A fully loaded base...
     importlib.import_module(base)
     # and a lazy sub...
-    mod = lazy_import.lazy_module(modname, error_strings=errors,
+    mod = lazy_import_plus.lazy_module(modname, error_strings=errors,
                                    lazy_mod_class=modclass, level=level)
     if level == 'base':
         assert not isinstance(mod, modclass)

@@ -1,6 +1,6 @@
 from functools import partial
 import gc
-import lazy_import
+import lazy_import_plus
 import sys
 import types
 
@@ -10,7 +10,7 @@ def is_lazy_class(cls):
 
 
 def is_lazy_module(module):
-    return isinstance(module, lazy_import.LazyModule)
+    return isinstance(module, lazy_import_plus.LazyModule)
 
 
 class LazyClass:
@@ -29,7 +29,7 @@ class LazyClass:
     @classmethod
     def real(cls):
         # TODO: do this in another place
-        lazy_import.overrides.pop(cls.module, None)
+        lazy_import_plus.overrides.pop(cls.module, None)
         return getattr(cls.module, cls.name)
 
     @classmethod
@@ -62,14 +62,14 @@ def _lazy_body(ns, *, modname, name, module):
 
 def lazy_class(modname):
     modname, _, name = modname.rpartition(".")
-    module = lazy_import.lazy_module(modname)
+    module = lazy_import_plus.lazy_module(modname)
     if is_lazy_module(module):
         cls = types.new_class(
             f"{modname}#lazy",
             bases=(LazyClass,),
             exec_body=partial(_lazy_body, modname=modname, name=name, module=module),
         )
-        lazy_import.overrides.setdefault(module, {})[name] = cls
+        lazy_import_plus.overrides.setdefault(module, {})[name] = cls
     else:
         cls = getattr(module, name)
     return cls

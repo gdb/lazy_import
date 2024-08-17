@@ -1,14 +1,15 @@
-lazy_import
+lazy_import_plus
 ===========
 
-|Build Status|
+``lazy_import_plus`` extends |lazy_import|_ by adding support for
+subclassing of lazy classes.
 
-``lazy_import`` provides a set of functions that load modules, and related
-attributes, in a lazy fashion. This allows deferring of ``ImportErrors`` to
-actual module use-time. Likewise, actual module initialization only takes place
-at use-time. This is useful when using optional dependencies with heavy loading
-times and/or footprints, since that cost is only paid if the module is actually
-used.
+``lazy_import`` provides a set of functions that load modules, and
+related attributes, in a lazy fashion. This allows deferring of
+``ImportErrors`` to actual module use-time. Likewise, actual module
+initialization only takes place at use-time. This is useful when using
+optional dependencies with heavy loading times and/or footprints,
+since that cost is only paid if the module is actually used.
 
 For minimal impact to other code running in the same session ``lazy_import``
 functionality is implemented without the use of import hooks.
@@ -20,8 +21,8 @@ Examples: lazy module loading
 
 .. code:: python
 
-    import lazy_import
-    np = lazy_import.lazy_module("numpy")
+    import lazy_import_plus
+    np = lazy_import_plus.lazy_module("numpy")
     # np is now available in the namespace and is listed in sys.modules under
     #  the 'numpy' key:
     import sys
@@ -41,11 +42,11 @@ Examples: lazy module loading
     # Lazy-importing a module that's already fully loaded returns the full
     #  module instead (even if it was loaded elsewhere in the current session)
     #  because there's no point in being lazy in this case:
-    os = lazy_import.lazy_module("os")
+    os = lazy_import_plus.lazy_module("os")
     # "<module 'os' from '/usr/lib/python/os.py'>"
 
 In the above code it can be seen that issuing
-``lazy_import.lazy_module("numpy")`` registers the lazy module in the
+``lazy_import_plus.lazy_module("numpy")`` registers the lazy module in the
 session-wide ``sys.modules`` registry. This means that *any* subsequent import
 of ``numpy`` in the same session, while the module is still not fully loaded,
 will get served a lazy version of the ``numpy`` module. This will happen also
@@ -53,8 +54,8 @@ outside the code that calls ``lazy_module``:
 
 .. code:: python
    
-    import lazy_import
-    np = lazy_import.lazy_module("numpy")
+    import lazy_import_plus
+    np = lazy_import_plus.lazy_module("numpy")
     import module_that_uses_numpy # This module will get a lazy module upon
                                   # 'import numpy'
 
@@ -66,9 +67,9 @@ Further uses are to delay ``ImportErrors``:
 
 .. code:: python
 
-    import lazy_import
+    import lazy_import_plus
     # The following succeeds even when asking for a module that's not available
-    missing = lazy_import.lazy_module("missing_module")
+    missing = lazy_import_plus.lazy_module("missing_module")
 
     missing.some_attr # This causes the full loading of the module, which now fails.
     "ImportError: __main__ attempted to use a functionality that requires module
@@ -79,14 +80,14 @@ Submodules work too:
 
 .. code:: python
 
-    import lazy_import
-    mod = lazy_import.lazy_module("some.sub.module")
+    import lazy_import_plus
+    mod = lazy_import_plus.lazy_module("some.sub.module")
     # mod now points to the some.sub.module lazy module
     #  equivalent to "from some.sub import module as mod"
 
     # Alternatively the returned reference can be made to point to the
     #  base module:
-    some = lazy_import.lazy_module("some.sub.module", level="base")
+    some = lazy_import_plus.lazy_module("some.sub.module", level="base")
 
     # This is equivalent to "import some.sub.module" in that only the base
     #  module's name is added to the namespace. All submodules must be accessed
@@ -105,9 +106,9 @@ those that have already been loaded as lazy in `__init__.py` will remain so:
 
     # in __init__.py:
 
-    import lazy_import
-    lazy_import.lazy_module("numpy")
-    lazy_import.lazy_module("scipy.stats")
+    import lazy_import_plus
+    lazy_import_plus.lazy_module("numpy")
+    lazy_import_plus.lazy_module("scipy.stats")
 
 
     # then, in any other file in the package just use the imports normally:
@@ -134,8 +135,8 @@ target callable (function, class, etc.).
 
 .. code:: python
 
-    import lazy_import
-    fn = lazy_import.lazy_callable("numpy.arange")
+    import lazy_import_plus
+    fn = lazy_import_plus.lazy_callable("numpy.arange")
     # 'numpy' is now in sys.modules and is 'Lazily-loaded module numpy'
 
     fn(10)
@@ -145,8 +146,8 @@ target callable (function, class, etc.).
 
 .. code:: python
 
-    import lazy_import
-    cl = lazy_import.lazy_callable("numpy.ndarray") # a class
+    import lazy_import_plus
+    cl = lazy_import_plus.lazy_callable("numpy.ndarray") # a class
 
     obj = cl([1, 2]) # This works OK (and also triggers the loading of numpy)
 
@@ -159,13 +160,13 @@ Installation
 
 .. code:: bash
 
-    pip install lazy_import
+    pip install lazy_import_plus
 
 Or, to include dependencies needed to run regression tests:
 
 .. code:: bash
 
-    pip install lazy_import[test]
+    pip install lazy_import_plus[test]
 
 Tests
 -----
@@ -175,20 +176,20 @@ test dependencies (see above), just run
 
 .. code:: python
 
-    import lazy_import.test_lazy
-    lazy_import.test_lazy.run()
+    import lazy_import_plus.test_lazy
+    lazy_import_plus.test_lazy.run()
     # This will automatically parallelize over the available number of cores
 
 Alternatively, tests can be run from the command line:
 
 .. code:: bash
 
-    pytest -n 4 --boxed -v --pyargs lazy_import
+    pytest -n 4 --boxed -v --pyargs lazy_import_plus
     # (replace '4' with the number of cores in your machine, or set to 1 if
     #  you'd rather test in serial)
 
 Tests depend only on |pytest|_ and |pytest-xdist|_, so if you didn't install
-them along ``lazy_import`` (as described under `Installation`_) just run
+them along ``lazy_import_plus`` (as described under `Installation`_) just run
 
 .. code:: bash
 
@@ -230,21 +231,19 @@ The PEAK ``importing`` code is
   as Zope or Python.  THERE ARE ABSOLUTELY NO WARRANTIES OF ANY KIND.
   Code quality varies between modules, from "beta" to "experimental
   pre-alpha".  :)
-  
+
 Code pertaining to lazy loading from PEAK ``importing`` was included in
 ``lazy_import``, modified in a number of ways. These are detailed in the
 ``CHANGELOG`` file of ``lazy_import``. Changes mainly involved Python 3
 compatibility, extension to allow customizable behavior, and added
 functionality (lazy importing of callable objects).
 
-
-.. |Build Status| image:: https://api.travis-ci.org/mnmelo/lazy_import.svg
-   :target: https://travis-ci.org/mnmelo/lazy_import
-
+.. |lazy_import| replace:: ``lazy_import``
 .. |importing| replace:: ``importing``
 .. |pytest| replace:: ``pytest``
 .. |pytest-xdist| replace:: ``pytest-xdist``
 
+.. _lazy_import: https://github.com/mnmelo/lazy_import
 .. _importing: http://peak.telecommunity.com/DevCenter/Importing
 .. _PEAK: http://peak.telecommunity.com/DevCenter/FrontPage
 .. _pytest: https://docs.pytest.org/en/latest/

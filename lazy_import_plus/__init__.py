@@ -1,25 +1,25 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-# lazy_import --- https://github.com/mnmelo/lazy_import
+# lazy_import_plus --- https://github.com/mnmelo/lazy_import_plus
 # Copyright (C) 2017-2018 Manuel Nuno Melo
 #
-# This file is part of lazy_import.
+# This file is part of lazy_import_plus.
 #
-#  lazy_import is free software: you can redistribute it and/or modify
+#  lazy_import_plus is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  lazy_import is distributed in the hope that it will be useful,
+#  lazy_import_plus is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with lazy_import.  If not, see <http://www.gnu.org/licenses/>.
+#  along with lazy_import_plus.  If not, see <http://www.gnu.org/licenses/>.
 #
-# lazy_import was based on code from the importing module from the PEAK
+# lazy_import_plus was based on code from the importing module from the PEAK
 # package (see <http://peak.telecommunity.com/DevCenter/Importing>). The PEAK
 # package is released under the following license, reproduced here:
 #
@@ -30,8 +30,8 @@
 #  pre-alpha".  :)
 #
 # Code pertaining to lazy loading from PEAK importing was included in
-# lazy_import, modified in a number of ways. These are detailed in the
-# CHANGELOG file of lazy_import. Changes mainly involved Python 3
+# lazy_import_plus, modified in a number of ways. These are detailed in the
+# CHANGELOG file of lazy_import_plus. Changes mainly involved Python 3
 # compatibility, extension to allow customizable behavior, and added
 # functionality (lazy importing of callable objects).
 # 
@@ -111,7 +111,7 @@ logging.Logger.lazy_trace = _lazy_trace
 logger = logging.getLogger(__name__)
 
 import weakref
-from lazy_import.lazy_class import lazy_class
+from lazy_import_plus.lazy_class import lazy_class
 
 ################################
 # Module/function registration #
@@ -164,7 +164,7 @@ class LazyModule(ModuleType):
                 pass
             # Check if it's one of the lazy callables
             try:
-                _callable = type(self)._lazy_import_callables[attr]
+                _callable = type(self)._lazy_import_plus_callables[attr]
                 logger.debug("Returning lazy-callable '{}'.".format(attr))
                 return _callable
             except (AttributeError, KeyError) as err:
@@ -208,15 +208,15 @@ class LazyCallable(object):
         self.modclass = type(self.module)
         self.callable = None
         # Need to save these, since the module-loading gets rid of them
-        self.error_msgs = self.modclass._lazy_import_error_msgs
-        self.error_strings = self.modclass._lazy_import_error_strings
+        self.error_msgs = self.modclass._lazy_import_plus_error_msgs
+        self.error_strings = self.modclass._lazy_import_plus_error_strings
 
     def __call__(self, *args, **kwargs):
         # No need to go through all the reloading more than once.
         if self.callable:
             return self.callable(*args, **kwargs)
         try:
-            del self.modclass._lazy_import_callables[self.cname]
+            del self.modclass._lazy_import_plus_callables[self.cname]
         except (AttributeError, KeyError):
             pass
         try:
@@ -228,9 +228,9 @@ class LazyCallable(object):
         except ImportError as err:
             # Import failed. We reset the dict and re-raise the ImportError.
             try:
-                self.modclass._lazy_import_callables[self.cname] = self
+                self.modclass._lazy_import_plus_callables[self.cname] = self
             except AttributeError:
-                self.modclass._lazy_import_callables = {self.cname: self}
+                self.modclass._lazy_import_plus_callables = {self.cname: self}
             raise_from(err, None)
         else:
             return self.callable(*args, **kwargs)
@@ -260,7 +260,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
          The module to import.
     error_strings : dict, optional
          A dictionary of strings to use when module-loading fails. Key 'msg'
-         sets the message to use (defaults to :attr:`lazy_import._MSG`). The
+         sets the message to use (defaults to :attr:`lazy_import_plus._MSG`). The
          message is formatted using the remaining dictionary keys. The default
          message informs the user of which module is missing (key 'module'),
          what code loaded the module as lazy (key 'caller'), and which package
@@ -279,7 +279,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
          registered in `sys.modules`.
          For *level* set to 'base' and *modulename* 'aaa.bbb.ccc'::
 
-            aaa = lazy_import.lazy_module("aaa.bbb.ccc", level='base')
+            aaa = lazy_import_plus.lazy_module("aaa.bbb.ccc", level='base')
             # 'aaa' becomes defined in the current namespace, with
             #  (sub)attributes 'aaa.bbb' and 'aaa.bbb.ccc'.
             # It's the lazy equivalent to:
@@ -287,7 +287,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
 
         For *level* set to 'leaf'::
 
-            ccc = lazy_import.lazy_module("aaa.bbb.ccc", level='leaf')
+            ccc = lazy_import_plus.lazy_module("aaa.bbb.ccc", level='leaf')
             # Only 'ccc' becomes set in the current namespace.
             # Lazy equivalent to:
             from aaa.bbb import ccc
@@ -307,8 +307,8 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
 
     Examples
     --------
-    >>> import lazy_import, sys
-    >>> np = lazy_import.lazy_module("numpy")
+    >>> import lazy_import_plus, sys
+    >>> np = lazy_import_plus.lazy_module("numpy")
     >>> np
     Lazily-loaded module numpy
     >>> np is sys.modules['numpy']
@@ -318,9 +318,9 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
     >>> np # ... and the module is changed in place. 
     <module 'numpy' from '/usr/local/lib/python/site-packages/numpy/__init__.py'>
 
-    >>> import lazy_import, sys
+    >>> import lazy_import_plus, sys
     >>> # The following succeeds even when asking for a module that's not available
-    >>> missing = lazy_import.lazy_module("missing_module")
+    >>> missing = lazy_import_plus.lazy_module("missing_module")
     >>> missing
     Lazily-loaded module missing_module
     >>> missing is sys.modules['missing_module']
@@ -367,15 +367,15 @@ def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
                 err_s.setdefault('module', modname)
 
                 class _LazyModule(lazy_mod_class):
-                    _lazy_import_error_msgs = {'msg': err_s.pop('msg')}
+                    _lazy_import_plus_error_msgs = {'msg': err_s.pop('msg')}
                     try:
-                        _lazy_import_error_msgs['msg_callable'] = \
+                        _lazy_import_plus_error_msgs['msg_callable'] = \
                                 err_s.pop('msg_callable')
                     except KeyError:
                         pass
-                    _lazy_import_error_strings = err_s
-                    _lazy_import_callables = {}
-                    _lazy_import_submodules = {}
+                    _lazy_import_plus_error_strings = err_s
+                    _lazy_import_plus_callables = {}
+                    _lazy_import_plus_submodules = {}
 
                     def __repr__(self):
                         return "Lazily-loaded module {}".format(self.__name__)
@@ -391,7 +391,7 @@ def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
             if fullsubmodname:
                 submod = sys.modules[fullsubmodname]
                 ModuleType.__setattr__(mod, submodname, submod)
-                _LazyModule._lazy_import_submodules[submodname] = submod
+                _LazyModule._lazy_import_plus_submodules[submodname] = submod
             fullsubmodname = modname
             modname, _, submodname = modname.rpartition('.')
         return sys.modules[fullmodname]
@@ -430,7 +430,7 @@ def lazy_callable(modname, *names, **kwargs):
          :func:`lazy_module`, with the exceptions that 1) a further key,
          'msg_callable', can be supplied to be used as the error when a module
          is successfully loaded but the target callable can't be found therein
-         (defaulting to :attr:`lazy_import._MSG_CALLABLE`); 2) a key 'callable'
+         (defaulting to :attr:`lazy_import_plus._MSG_CALLABLE`); 2) a key 'callable'
          is always added with the callable name being loaded.
     lazy_mod_class : type, optional
          See definition under :func:`lazy_module`.
@@ -461,8 +461,8 @@ def lazy_callable(modname, *names, **kwargs):
 
     Examples
     --------
-    >>> import lazy_import, sys
-    >>> fn = lazy_import.lazy_callable("numpy.arange")
+    >>> import lazy_import_plus, sys
+    >>> fn = lazy_import_plus.lazy_callable("numpy.arange")
     >>> sys.modules['numpy']
     Lazily-loaded module numpy
     >>> fn(10)
@@ -470,8 +470,8 @@ def lazy_callable(modname, *names, **kwargs):
     >>> sys.modules['numpy']
     <module 'numpy' from '/usr/local/lib/python3.5/site-packages/numpy/__init__.py'>
 
-    >>> import lazy_import, sys
-    >>> cl = lazy_import.lazy_callable("numpy.ndarray") # a class
+    >>> import lazy_import_plus, sys
+    >>> cl = lazy_import_plus.lazy_callable("numpy.ndarray") # a class
     >>> obj = cl([1, 2]) # This works OK (and also triggers the loading of numpy)
     >>> class MySubclass(cl): # This fails because cls is just a wrapper,
     >>>     pass              #  not an actual class.
@@ -507,8 +507,8 @@ def _lazy_callable(modname, cname, error_strings,
     module = _lazy_module(modname, error_strings, lazy_mod_class, attrs={})
     modclass = type(module)
     if (issubclass(modclass, LazyModule) and
-        hasattr(modclass, '_lazy_import_callables')):
-        modclass._lazy_import_callables.setdefault(
+        hasattr(modclass, '_lazy_import_plus_callables')):
+        modclass._lazy_import_plus_callables.setdefault(
             cname, lazy_call_class(module, cname))
     return getattr(module, cname)
 
@@ -529,10 +529,10 @@ def _load_module(module):
         parent, _, modname = module.__name__.rpartition('.')
         logger.debug("loading module {}".format(modname))
         # We first identify whether this is a loadable LazyModule, then we
-        # strip as much of lazy_import behavior as possible (keeping it cached,
+        # strip as much of lazy_import_plus behavior as possible (keeping it cached,
         # in case loading fails and we need to reset the lazy state).
-        if not hasattr(modclass, '_lazy_import_error_msgs'):
-            # Alreay loaded (no _lazy_import_error_msgs attr). Not reloading.
+        if not hasattr(modclass, '_lazy_import_plus_error_msgs'):
+            # Alreay loaded (no _lazy_import_plus_error_msgs attr). Not reloading.
             return
         # First, ensure the parent is loaded (using recursion; *very* unlikely
         # we'll ever hit a stack limit in this case).
@@ -574,9 +574,9 @@ def _load_module(module):
                 err.args[0] == "'NoneType' object has no attribute 'name'"):
                 # Not the AttributeError we were looking for.
                 raise
-            msg = modclass._lazy_import_error_msgs['msg']
+            msg = modclass._lazy_import_plus_error_msgs['msg']
             raise_from(ImportError(
-                msg.format(**modclass._lazy_import_error_strings)), None)
+                msg.format(**modclass._lazy_import_plus_error_strings)), None)
 
 
 ##############################
@@ -592,10 +592,10 @@ _MSG_CALLABLE = ("{caller} attempted to use a functionality that requires "
            "module. Please install a version of {install_name} that has "
            "{module}.{callable} and retry.")
 
-_CLS_ATTRS = ("_lazy_import_error_strings", "_lazy_import_error_msgs",
-              "_lazy_import_callables", "_lazy_import_submodules", "__repr__")
+_CLS_ATTRS = ("_lazy_import_plus_error_strings", "_lazy_import_plus_error_msgs",
+              "_lazy_import_plus_callables", "_lazy_import_plus_submodules", "__repr__")
 
-_DELETION_DICT = ("_lazy_import_submodules",)
+_DELETION_DICT = ("_lazy_import_plus_submodules",)
 
 def _setdef(argdict, name, defaultvalue):
     """Like dict.setdefault but sets the default value also if None is present.

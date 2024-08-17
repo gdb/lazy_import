@@ -2,18 +2,14 @@
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as infile:
-    readme = infile.read()
-
-with open('lazy_import/VERSION') as infile:
+with open('lazy_import_plus/VERSION') as infile:
     version = infile.read().strip()
 
 tests_require = ['pytest', 'pytest-xdist']
 
 setup(name='lazy_import_plus',
       version=version,
-      description='A module for lazy loading of Python modules and lazy subclassing of pure Python classes (forked from lazy_import)',
-      long_description=readme,
+      description='A module for lazy loading of Python modules and lazy subclassing of pure Python classes (forked from lazy_import_plus)',
       url='https://github.com/gdb/lazy_import',
       author='Greg Brockman',
       author_email='gdb@gregbrockman.com',
@@ -40,8 +36,8 @@ setup(name='lazy_import_plus',
                    ],
       packages=find_packages(),
       install_requires=['six'],
-      test_suite='lazy_import.test_lazy',
+      test_suite='lazy_import_plus.test_lazy',
       tests_require=tests_require,
       extras_require={'test': tests_require},
-      package_data={'lazy_import': ['VERSION']}
+      package_data={'lazy_import_plus': ['VERSION']}
       )
