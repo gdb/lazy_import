@@ -110,6 +110,7 @@ def _lazy_trace(self):
 logging.Logger.lazy_trace = _lazy_trace
 logger = logging.getLogger(__name__)
 
+import contextlib
 import weakref
 from lazy_import_plus.lazy_class import lazy_class
 
@@ -119,7 +120,7 @@ from lazy_import_plus.lazy_class import lazy_class
 
 #### Lazy classes ####
 
-overrides = weakref.WeakKeyDictionary()
+module_state = weakref.WeakKeyDictionary()
 
 class LazyModule(ModuleType):
     """Class for lazily-loaded modules that triggers proper loading on access.
@@ -132,8 +133,9 @@ class LazyModule(ModuleType):
     # peak.util.imports sets __slots__ to (), but it seems pointless because
     # the base ModuleType doesn't itself set __slots__.
     def __getattribute__(self, attr):
-        if (overriden := overrides.get(self)) is not None and attr in overriden:
-            return overriden[attr]
+        attrs = module_state[self]['attrs']
+        if attr in attrs:
+            return attrs[attr]
 
         logger.debug("Getting attr {} of LazyModule instance of {}"
                      .format(attr, super(LazyModule, self)
@@ -239,7 +241,7 @@ class LazyCallable(object):
 ### Functions ###
 
 def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
-                  level='leaf', attrs=None):
+                  level='leaf', attrs=None, on_import=None):
     """Function allowing lazy importing of a module into the namespace.
 
     A lazy module object is created, registered in `sys.modules`, and
@@ -296,6 +298,9 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
          these attributes won't result in the real module being loaded. Defaults
          to dict(__file__=None), which is needed if later importing torch, since it
          checks for a __file__ attribute on every loaded module upon import.
+    on_import : contextmanager, optional
+         A context manager that wraps the import of the real module. This allows
+         you to run code both before and after the module is actually loaded.
 
     Returns
     -------
@@ -340,7 +345,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
 
     if attrs is None:
         attrs = dict(__file__=None)
-    mod = _lazy_module(modname, error_strings, lazy_mod_class, attrs=attrs)
+    mod = _lazy_module(modname, error_strings, lazy_mod_class, attrs=attrs, on_import=on_import)
     if level == 'base':
         return sys.modules[module_basename(modname)]
     elif level == 'leaf':
@@ -349,7 +354,10 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
         raise ValueError("Parameter 'level' must be one of ('base', 'leaf')")
 
 
-def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
+def _lazy_module(modname, error_strings, lazy_mod_class, attrs, on_import):
+    if on_import is None:
+        on_import = contextlib.nullcontext()
+
     with _ImportLockContext():
         fullmodname = modname
         fullsubmodname = None
@@ -383,7 +391,7 @@ def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
                 _LazyModule.__name__ = 'module'
                 # Actual module instantiation
                 mod = sys.modules[modname] = _LazyModule(modname)
-                overrides[mod] = attrs
+                module_state[mod] = {'attrs': attrs, 'on_import': on_import}
                 # No need for __spec__. Maybe in the future.
                 #if ModuleSpec:
                 #    ModuleType.__setattr__(mod, '__spec__',
@@ -504,7 +512,7 @@ def _lazy_callable(modname, cname, error_strings,
                      lazy_mod_class, lazy_call_class):
     # We could do most of this in the LazyCallable __init__, but here we can
     # pre-check whether to actually be lazy or not.
-    module = _lazy_module(modname, error_strings, lazy_mod_class, attrs={})
+    module = _lazy_module(modname, error_strings, lazy_mod_class, attrs={}, on_import=None)
     modclass = type(module)
     if (issubclass(modclass, LazyModule) and
         hasattr(modclass, '_lazy_import_plus_callables')):
@@ -547,20 +555,21 @@ def _load_module(module):
                 # We've been loaded by the parent. Let's bail.
                 return
             cached_data = _clean_lazymodule(module)
-            try:
-                # Get Python to do the real import!
-                reload_module(module)           
-            except:
-                # Loading failed. We reset our lazy state.
-                logger.debug("Failed to load module {}. Resetting..."
-                             .format(modname))
-                _reset_lazymodule(module, cached_data)
-                raise
-            else:
-                # Successful load
-                logger.debug("Successfully loaded module {}".format(modname))
-                delattr(modclass, '_LOADING')
-                _reset_lazy_submod_refs(module)
+            with module_state[module]['on_import']:
+                try:
+                    # Get Python to do the real import!
+                    reload_module(module)
+                except:
+                    # Loading failed. We reset our lazy state.
+                    logger.debug("Failed to load module {}. Resetting..."
+                                 .format(modname))
+                    _reset_lazymodule(module, cached_data)
+                    raise
+                else:
+                    # Successful load
+                    logger.debug("Successfully loaded module {}".format(modname))
+                    delattr(modclass, '_LOADING')
+                    _reset_lazy_submod_refs(module)
 
         except (AttributeError, ImportError) as err:
             logger.debug("Failed to load {}.\n{}: {}"

@@ -28,8 +28,8 @@ class LazyClass:
 
     @classmethod
     def real(cls):
-        # TODO: do this in another place
-        lazy_import_plus.overrides.pop(cls.module, None)
+        # TODO: do this in another place?
+        lazy_import_plus.module_state[cls.module]['attrs'].pop(cls.name)
         return getattr(cls.module, cls.name)
 
     @classmethod
@@ -69,7 +69,7 @@ def lazy_class(modname):
             bases=(LazyClass,),
             exec_body=partial(_lazy_body, modname=modname, name=name, module=module),
         )
-        lazy_import_plus.overrides.setdefault(module, {})[name] = cls
+        lazy_import_plus.module_state[module]['attrs'][name] = cls
     else:
         cls = getattr(module, name)
     return cls
