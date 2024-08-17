@@ -34,7 +34,7 @@
 # CHANGELOG file of lazy_import_plus. Changes mainly involved Python 3
 # compatibility, extension to allow customizable behavior, and added
 # functionality (lazy importing of callable objects).
-# 
+#
 
 """
 Lazy module loading
@@ -315,7 +315,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
     True
     >>> np.pi # This causes the full loading of the module ...
     3.141592653589793
-    >>> np # ... and the module is changed in place. 
+    >>> np # ... and the module is changed in place.
     <module 'numpy' from '/usr/local/lib/python/site-packages/numpy/__init__.py'>
 
     >>> import lazy_import_plus, sys
@@ -354,12 +354,12 @@ def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
         fullmodname = modname
         fullsubmodname = None
         # ensure parent module/package is in sys.modules
-        # and parent.modname=module, as soon as the parent is imported   
+        # and parent.modname=module, as soon as the parent is imported
         while modname:
             try:
                 mod = sys.modules[modname]
                 # We reached a (base) module that's already loaded. Let's stop
-                # the cycle. Can't use 'break' because we still want to go 
+                # the cycle. Can't use 'break' because we still want to go
                 # through the fullsubmodname check below.
                 modname = ''
             except KeyError:
@@ -379,7 +379,7 @@ def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
 
                     def __repr__(self):
                         return "Lazily-loaded module {}".format(self.__name__)
-                # A bit of cosmetic, to make AttributeErrors read more natural  
+                # A bit of cosmetic, to make AttributeErrors read more natural
                 _LazyModule.__name__ = 'module'
                 # Actual module instantiation
                 mod = sys.modules[modname] = _LazyModule(modname)
@@ -406,7 +406,7 @@ def lazy_callable(modname, *names, **kwargs):
     triggered when the returned lazy function itself is called. This lazy
     import of the target module uses the same mechanism as
     :func:`lazy_module`.
-    
+
     If, however, the target module has already been fully imported prior
     to invocation of :func:`lazy_callable`, then the target callables
     themselves are returned and no lazy imports are made.
@@ -446,7 +446,7 @@ def lazy_callable(modname, *names, **kwargs):
         If only *modname* is passed it is assumed to be a full
         'module_name.callable_name' string, in which case the wrapper for the
         imported callable is returned directly, and not in a tuple.
-        
+
     Notes
     -----
     Unlike :func:`lazy_module`, which returns a lazy module that eventually
@@ -641,7 +641,7 @@ def _clean_lazymodule(module):
 
     Parameters
     ----------
-    module: LazyModule 
+    module: LazyModule
 
     Returns
     -------
@@ -705,7 +705,7 @@ def _reset_lazy_submod_refs(module):
             resetnames = getattr(modclass, deldict)
         except AttributeError:
             continue
-        for name, submod in resetnames.items(): 
+        for name, submod in resetnames.items():
             super(LazyModule, module).__setattr__(name, submod)
 
 
@@ -716,4 +716,3 @@ def run_from_ipython():
         return True
     except NameError:
         return False
-

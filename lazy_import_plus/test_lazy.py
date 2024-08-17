@@ -60,7 +60,7 @@ def random_modname(submodules=0):
         if modname in _GENERATED_NAMES or modname in sys.modules:
             continue
         _GENERATED_NAMES.append(modname)
-        return modname 
+        return modname
 
 class _TestLazyModule(lazy_import_plus.LazyModule):
     pass
@@ -220,7 +220,7 @@ def test_callable_missing_module(nsub, errors, cnames, fn):
         else:
             expected_err = errors["msg"].format(**errors)
         _check_module_missing(lazy, msg=expected_err, call=True)
-    
+
 @pytest.mark.parametrize("modname, errors, cnames, fn",
         itertools.product(NAMES_EXISTING, ERROR_MSGS, CALLABLE_NAMES,
                           CALLABLE_ALIASES))
@@ -242,7 +242,7 @@ def test_callable_missing(modname, errors, cnames, fn):
             errors['callable'] = cname
             expected_err = errors["msg_callable"].format(**errors)
         _check_callable_missing(lazy, msg=expected_err)
-    
+
 @pytest.mark.parametrize("modname, errors, cnames, fn",
         itertools.product(NAMES_EXISTING, ERROR_MSGS, CALLABLE_NAMES,
                           CALLABLE_ALIASES))
