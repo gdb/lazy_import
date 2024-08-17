@@ -110,11 +110,16 @@ def _lazy_trace(self):
 logging.Logger.lazy_trace = _lazy_trace
 logger = logging.getLogger(__name__)
 
+import weakref
+from lazy_import.lazy_class import lazy_class
+
 ################################
 # Module/function registration #
 ################################
 
 #### Lazy classes ####
+
+overrides = weakref.WeakKeyDictionary()
 
 class LazyModule(ModuleType):
     """Class for lazily-loaded modules that triggers proper loading on access.
@@ -127,6 +132,9 @@ class LazyModule(ModuleType):
     # peak.util.imports sets __slots__ to (), but it seems pointless because
     # the base ModuleType doesn't itself set __slots__.
     def __getattribute__(self, attr):
+        if (overriden := overrides.get(self)) is not None and attr in overriden:
+            return overriden[attr]
+
         logger.debug("Getting attr {} of LazyModule instance of {}"
                      .format(attr, super(LazyModule, self)
                              .__getattribute__("__name__")))
@@ -231,7 +239,7 @@ class LazyCallable(object):
 ### Functions ###
 
 def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
-                  level='leaf'):
+                  level='leaf', attrs=None):
     """Function allowing lazy importing of a module into the namespace.
 
     A lazy module object is created, registered in `sys.modules`, and
@@ -283,6 +291,11 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
             # Only 'ccc' becomes set in the current namespace.
             # Lazy equivalent to:
             from aaa.bbb import ccc
+    attrs : dict, optional
+         A dictionary of attributes for the lazy module to use. Accessing
+         these attributes won't result in the real module being loaded. Defaults
+         to dict(__file__=None), which is needed if later importing torch, since it
+         checks for a __file__ attribute on every loaded module upon import.
 
     Returns
     -------
@@ -325,7 +338,9 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
         error_strings = {}
     _set_default_errornames(modname, error_strings)
 
-    mod = _lazy_module(modname, error_strings, lazy_mod_class)
+    if attrs is None:
+        attrs = dict(__file__=None)
+    mod = _lazy_module(modname, error_strings, lazy_mod_class, attrs=attrs)
     if level == 'base':
         return sys.modules[module_basename(modname)]
     elif level == 'leaf':
@@ -334,7 +349,7 @@ def lazy_module(modname, error_strings=None, lazy_mod_class=LazyModule,
         raise ValueError("Parameter 'level' must be one of ('base', 'leaf')")
 
 
-def _lazy_module(modname, error_strings, lazy_mod_class):
+def _lazy_module(modname, error_strings, lazy_mod_class, attrs):
     with _ImportLockContext():
         fullmodname = modname
         fullsubmodname = None
@@ -368,6 +383,7 @@ def _lazy_module(modname, error_strings, lazy_mod_class):
                 _LazyModule.__name__ = 'module'
                 # Actual module instantiation
                 mod = sys.modules[modname] = _LazyModule(modname)
+                overrides[mod] = attrs
                 # No need for __spec__. Maybe in the future.
                 #if ModuleSpec:
                 #    ModuleType.__setattr__(mod, '__spec__',
@@ -482,13 +498,13 @@ def lazy_callable(modname, *names, **kwargs):
     return tuple(_lazy_callable(modname, cname, error_strings.copy(),
                         lazy_mod_class, lazy_call_class) for cname in names)
 
-lazy_function = lazy_class = lazy_callable
+lazy_function = lazy_callable
 
 def _lazy_callable(modname, cname, error_strings,
                      lazy_mod_class, lazy_call_class):
     # We could do most of this in the LazyCallable __init__, but here we can
     # pre-check whether to actually be lazy or not.
-    module = _lazy_module(modname, error_strings, lazy_mod_class)
+    module = _lazy_module(modname, error_strings, lazy_mod_class, attrs={})
     modclass = type(module)
     if (issubclass(modclass, LazyModule) and
         hasattr(modclass, '_lazy_import_callables')):
